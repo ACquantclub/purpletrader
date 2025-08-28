@@ -13,6 +13,7 @@ from .types import JsonDict, Order, Timeframe
 @dataclass
 class TradingEngineClient:
     base_url: str
+    user_id: Optional[str] = None
     timeout: int = 30
 
     def _url(self, path: str) -> str:
@@ -41,6 +42,8 @@ class TradingEngineClient:
     # Submit Order: POST /order
     def submit_order(self, order: Order | Dict[str, Any]) -> JsonDict:
         payload = order.to_payload() if isinstance(order, Order) else order
+        if ("userId" not in payload or payload.get("userId") in (None, "")) and self.user_id is not None:
+            payload["userId"] = self.user_id
         resp = requests.post(self._url("/order"), json=payload, timeout=self.timeout)
         return self._handle_response(resp)
 
@@ -79,61 +82,4 @@ class TradingEngineClient:
     def health(self) -> JsonDict:
         resp = requests.get(self._url("/health"), timeout=self.timeout)
         return self._handle_response(resp)
-
-    # Admin endpoints
-
-    # Admin Status: GET /admin/status with auth
-    def admin_status(self, password: str, method: str = "query") -> JsonDict:
-        if method == "query":
-            resp = requests.get(self._url(f"/admin/status?password={password}"), timeout=self.timeout)
-        elif method == "bearer":
-            resp = requests.get(self._url("/admin/status"), headers={"Authorization": f"Bearer {password}"}, timeout=self.timeout)
-        elif method == "header":
-            resp = requests.get(self._url("/admin/status"), headers={"X-Admin-Password": password}, timeout=self.timeout)
-        else:
-            raise ValueError("method must be 'query', 'bearer', or 'header'")
-        return self._handle_response(resp)
-
-    # Stop Trading: POST /admin/stop_trading with auth
-    def admin_stop_trading(self, password: str, method: str = "bearer") -> JsonDict:
-        if method == "bearer":
-            headers = {"Authorization": f"Bearer {password}"}
-        elif method == "header":
-            headers = {"X-Admin-Password": password}
-        elif method == "query":
-            resp = requests.post(self._url(f"/admin/stop_trading?password={password}"), timeout=self.timeout)
-            return self._handle_response(resp)
-        else:
-            raise ValueError("method must be 'bearer', 'header', or 'query'")
-        resp = requests.post(self._url("/admin/stop_trading"), headers=headers, timeout=self.timeout)
-        return self._handle_response(resp)
-
-    # Resume Trading: POST /admin/resume_trading with auth
-    def admin_resume_trading(self, password: str, method: str = "bearer") -> JsonDict:
-        if method == "bearer":
-            headers = {"Authorization": f"Bearer {password}"}
-        elif method == "header":
-            headers = {"X-Admin-Password": password}
-        elif method == "query":
-            resp = requests.post(self._url(f"/admin/resume_trading?password={password}"), timeout=self.timeout)
-            return self._handle_response(resp)
-        else:
-            raise ValueError("method must be 'bearer', 'header', or 'query'")
-        resp = requests.post(self._url("/admin/resume_trading"), headers=headers, timeout=self.timeout)
-        return self._handle_response(resp)
-
-    # Flush System: POST /admin/flush_system with auth
-    def admin_flush_system(self, password: str, method: str = "bearer") -> JsonDict:
-        if method == "bearer":
-            headers = {"Authorization": f"Bearer {password}"}
-        elif method == "header":
-            headers = {"X-Admin-Password": password}
-        elif method == "query":
-            resp = requests.post(self._url(f"/admin/flush_system?password={password}"), timeout=self.timeout)
-            return self._handle_response(resp)
-        else:
-            raise ValueError("method must be 'bearer', 'header', or 'query'")
-        resp = requests.post(self._url("/admin/flush_system"), headers=headers, timeout=self.timeout)
-        return self._handle_response(resp)
-
 

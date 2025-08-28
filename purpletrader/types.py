@@ -25,7 +25,7 @@ class OrderType(str, Enum):
 @dataclass
 class Order:
     id: str
-    userId: str
+    userId: Optional[str]
     symbol: str
     type: OrderType
     side: OrderSide
@@ -35,12 +35,13 @@ class Order:
     def to_payload(self) -> Dict[str, Any]:
         payload: Dict[str, Any] = {
             "id": self.id,
-            "userId": self.userId,
             "symbol": self.symbol,
             "type": self.type.value if isinstance(self.type, OrderType) else self.type,
             "side": self.side.value if isinstance(self.side, OrderSide) else self.side,
             "quantity": self.quantity,
         }
+        if self.userId is not None:
+            payload["userId"] = self.userId
         if self.price is not None:
             payload["price"] = self.price
         return payload

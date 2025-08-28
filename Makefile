@@ -25,7 +25,7 @@ install: install-env-run install-env-docs install-env-test
 	@echo "👷‍♂️ $(BLUE)installing requirements in $(PROJECT)$(NC)"
 	pyenv local $(PROJECT)
 	pip install -U pip > /dev/null
-	pip install -U wheel twine setuptools > /dev/null
+	pip install -U wheel twine build setuptools > /dev/null
 
 install-env-run:
 	@echo "👷‍♂️ $(BLUE)creating virtual environment $(PROJECT)-run$(NC)"
@@ -111,22 +111,25 @@ docs: env-docs
 
 # packaging targets
 
-publish-test: dist
-	python -m twine upload --repository testpypi dist/*
+publish-test: dist-check
+	python -m twine upload --config-file /home/taira/Code/purpletrader/.pypirc --repository testpypi dist/*
 
-publish: dist
-	python -m twine upload dist/*
+publish: dist-check
+	python -m twine upload --config-file /home/taira/Code/purpletrader/.pypirc dist/*
 
 dist: dist-clean
 	python -m build
+
+dist-check: dist
+	python -m twine check dist/*
 
 dist-clean: clean
 	rm -rf dist build *.egg-info
 
 clean:
-	find . -type f -name "*.backup" | xargs rm
+	find . -type f -name "*.backup" -print0 | xargs -0 -r rm -f
 
-.PHONY: dist docs test
+.PHONY: dist dist-check docs test publish publish-test
 
 # include optional a personal/local touch
 
